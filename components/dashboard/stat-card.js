@@ -7,7 +7,7 @@ export default function StatCard({ label, value, change }) {
       <p className="text-sm text-gray-500 mb-2">{label}</p>
       <p className={`text-3xl font-extrabold ${isPositive ? 'text-green-600' : isNegative ? 'text-red-600' : 'text-gray-900'}`}>
         {value}
-        {change != null && (
+        {change != null && change !== 0 && (
           <span className={`inline-flex items-center gap-1 text-sm font-semibold ml-2 align-middle ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
               {isPositive
@@ -15,7 +15,7 @@ export default function StatCard({ label, value, change }) {
                 : <polyline points="6 9 12 15 18 9"/>
               }
             </svg>
-            {Math.abs(change)}%
+            {Math.abs(change).toFixed(2)}%
           </span>
         )}
       </p>

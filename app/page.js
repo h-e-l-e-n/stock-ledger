@@ -22,7 +22,7 @@ const mockTrades = [
 ]
 
 export default function DashboardPage() {
-  const pnlSign = mockStats.todayPnl >= 0 ? '+' : ''
+  const pnlSign = mockStats.todayPnl >= 0 ? '+' : '-'
 
   return (
     <main className="p-8 bg-gray-50 min-h-screen">
@@ -37,7 +37,7 @@ export default function DashboardPage() {
         />
         <StatCard
           label="今日損益"
-          value={`${pnlSign}NT$ ${mockStats.todayPnl.toLocaleString()}`}
+          value={`NT$ ${pnlSign}${Math.abs(mockStats.todayPnl).toLocaleString()}`}
           change={mockStats.todayPct}
         />
       </div>

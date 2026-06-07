@@ -23,7 +23,7 @@ export default function TradesTable({ trades, limit = 3 }) {
         </thead>
         <tbody>
           {rows.map((trade, i) => (
-            <tr key={i} className="border-t border-gray-100">
+            <tr key={`${trade.date}-${trade.code}-${i}`} className="border-t border-gray-100">
               <td className="text-sm text-gray-700 py-3 px-2">{trade.date}</td>
               <td className="py-3 px-2">
                 <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded ${
@@ -36,7 +36,7 @@ export default function TradesTable({ trades, limit = 3 }) {
               </td>
               <td className="text-sm text-gray-700 py-3 px-2">{trade.name} {trade.code}</td>
               <td className="text-sm font-semibold text-gray-900 py-3 px-2 text-right">
-                NT$ {trade.amount.toLocaleString()}
+                NT$ {Number(trade.amount).toLocaleString()}
               </td>
             </tr>
           ))}

@@ -72,11 +72,11 @@ export default function PositionsTable({ positions = [] }) {
             <tr key={row.code} className="border-t border-gray-100 hover:bg-gray-50">
               <td className="px-4 py-3 text-sm font-medium text-gray-900">{row.code}</td>
               <td className="px-4 py-3 text-sm text-gray-700">{row.name}</td>
-              <td className="px-4 py-3 text-sm text-right text-gray-700">{row.shares.toLocaleString()}</td>
-              <td className="px-4 py-3 text-sm text-right text-gray-700">NT$ {row.costPrice.toLocaleString()}</td>
-              <td className="px-4 py-3 text-sm text-right text-gray-700">NT$ {row.currentPrice.toLocaleString()}</td>
+              <td className="px-4 py-3 text-sm text-right text-gray-700">{row.shares.toLocaleString('en-US')}</td>
+              <td className="px-4 py-3 text-sm text-right text-gray-700">NT$ {row.costPrice.toLocaleString('en-US')}</td>
+              <td className="px-4 py-3 text-sm text-right text-gray-700">NT$ {row.currentPrice.toLocaleString('en-US')}</td>
               <td className={`px-4 py-3 text-sm text-right font-medium ${pnlColor(row.pnlAmount)}`}>
-                NT$ {row.pnlAmount > 0 ? '+' : row.pnlAmount < 0 ? '-' : ''}{Math.abs(row.pnlAmount).toLocaleString()}
+                NT$ {row.pnlAmount > 0 ? '+' : row.pnlAmount < 0 ? '-' : ''}{Math.abs(row.pnlAmount).toLocaleString('en-US')}
               </td>
               <td className={`px-4 py-3 text-sm text-right font-medium ${pnlColor(row.pnlPct)}`}>
                 {row.pnlPct > 0 ? '+' : row.pnlPct < 0 ? '-' : ''}{Math.abs(row.pnlPct).toFixed(2)}%

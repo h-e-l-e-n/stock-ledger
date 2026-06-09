@@ -13,10 +13,10 @@ export default function PositionsPage() {
   const totalValue = mockPositions.reduce((s, p) => s + p.currentPrice * p.shares, 0)
   const totalPnl = mockPositions.reduce((s, p) => s + (p.currentPrice - p.costPrice) * p.shares, 0)
   const pnlPct = (totalPnl / (totalValue - totalPnl)) * 100
-  const pnlSign = totalPnl >= 0 ? '+' : '-'
+  const pnlSign = totalPnl > 0 ? '+' : totalPnl < 0 ? '-' : ''
 
   return (
-    <div className="p-8">
+    <main className="p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-extrabold text-gray-900">持倉清單</h1>
         <p className="text-sm text-gray-500 mt-1">目前持有的股票投資組合</p>
@@ -33,6 +33,6 @@ export default function PositionsPage() {
       </div>
 
       <PositionsTable positions={mockPositions} />
-    </div>
+    </main>
   )
 }

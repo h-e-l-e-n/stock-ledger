@@ -25,7 +25,7 @@ function pnlColor(v) {
   return v > 0 ? 'text-green-600' : v < 0 ? 'text-red-600' : 'text-gray-900'
 }
 
-export default function PositionsTable({ positions }) {
+export default function PositionsTable({ positions = [] }) {
   const [sortKey, setSortKey] = useState(null)
   const [sortDir, setSortDir] = useState('asc')
 
@@ -33,7 +33,9 @@ export default function PositionsTable({ positions }) {
     positions.map((p) => ({
       ...p,
       pnlAmount: (p.currentPrice - p.costPrice) * p.shares,
-      pnlPct: (p.currentPrice - p.costPrice) / p.costPrice * 100,
+      pnlPct: p.costPrice !== 0
+        ? (p.currentPrice - p.costPrice) / p.costPrice * 100
+        : 0,
     })),
     sortKey,
     sortDir,

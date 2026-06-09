@@ -21,6 +21,7 @@ describe('sortRows', () => {
   test('數值欄位 desc 排序', () => {
     const result = sortRows(rows, 'pnlAmount', 'desc')
     expect(result[0].code).toBe('2330')  // 6000
+    expect(result[1].code).toBe('2454')  // 3500
     expect(result[2].code).toBe('2317')  // -600
   })
 
@@ -34,12 +35,14 @@ describe('sortRows', () => {
   test('字串欄位 (code) desc 排序', () => {
     const result = sortRows(rows, 'code', 'desc')
     expect(result[0].code).toBe('2454')
+    expect(result[1].code).toBe('2330')
     expect(result[2].code).toBe('2317')
   })
 
   test('不改變原陣列', () => {
     const original = [rows[0].code, rows[1].code, rows[2].code]
-    sortRows(rows, 'pnlAmount', 'asc')
+    const result = sortRows(rows, 'pnlAmount', 'asc')
+    expect(result).not.toBe(rows)
     expect(rows[0].code).toBe(original[0])
     expect(rows[1].code).toBe(original[1])
     expect(rows[2].code).toBe(original[2])

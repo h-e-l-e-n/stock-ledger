@@ -1,13 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-
-const mockWatchlist = [
-  { symbol: '2303', name: '聯電',   currentPrice: 48.5, targetPrice: 55,  stopLoss: 42,  change: 1.2,  changePercent: 2.54,  alertEnabled: true  },
-  { symbol: '2379', name: '瑞昱',   currentPrice: 385,  targetPrice: 420, stopLoss: 350, change: -5.5, changePercent: -1.41, alertEnabled: true  },
-  { symbol: '2408', name: '南亞科', currentPrice: 72.3, targetPrice: 80,  stopLoss: 65,  change: 2.8,  changePercent: 4.03,  alertEnabled: false },
-  { symbol: '2603', name: '長榮',   currentPrice: 165,  targetPrice: 180, stopLoss: 150, change: -3.2, changePercent: -1.90, alertEnabled: true  },
-]
+import { useState, useEffect } from 'react'
 
 function isPriceNearTarget(current, target) {
   return Math.abs((current - target) / target) < 0.05
@@ -18,13 +11,43 @@ function isPriceNearStopLoss(current, stopLoss) {
 }
 
 export default function WatchlistPage() {
-  const [watchlist, setWatchlist] = useState(mockWatchlist)
+  const [watchlist, setWatchlist] = useState([])
+  const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [newItem, setNewItem] = useState({ symbol: '', name: '', targetPrice: '', stopLoss: '' })
+
+  function loadWatchlist() {
+    setLoading(true)
+    fetch('/api/watchlist')
+      .then((r) => r.json())
+      .then(setWatchlist)
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { loadWatchlist() }, [])
 
   const toggleAlert = (symbol) => {
     setWatchlist(watchlist.map((item) =>
       item.symbol === symbol ? { ...item, alertEnabled: !item.alertEnabled } : item
     ))
+  }
+
+  const handleAdd = async (e) => {
+    e.preventDefault()
+    if (!newItem.symbol) return
+    await fetch('/api/watchlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        symbol: newItem.symbol,
+        name: newItem.name,
+        targetPrice: parseFloat(newItem.targetPrice) || 0,
+        stopLoss: parseFloat(newItem.stopLoss) || 0,
+      }),
+    })
+    setNewItem({ symbol: '', name: '', targetPrice: '', stopLoss: '' })
+    setShowAddForm(false)
+    loadWatchlist()
   }
 
   return (
@@ -49,28 +72,34 @@ export default function WatchlistPage() {
 
       {/* 新增表單 */}
       {showAddForm && (
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
+        <form onSubmit={handleAdd} className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">新增觀察股票</h3>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <input type="text" placeholder="股票代號"
+            <input type="text" placeholder="股票代號" value={newItem.symbol}
+              onChange={(e) => setNewItem((p) => ({ ...p, symbol: e.target.value }))}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <input type="number" placeholder="目標價"
+            <input type="text" placeholder="股票名稱" value={newItem.name}
+              onChange={(e) => setNewItem((p) => ({ ...p, name: e.target.value }))}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <input type="number" placeholder="停損價"
+            <input type="number" placeholder="目標價" value={newItem.targetPrice}
+              onChange={(e) => setNewItem((p) => ({ ...p, targetPrice: e.target.value }))}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors">
-              新增
-            </button>
-            <button onClick={() => setShowAddForm(false)}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition-colors">
-              取消
-            </button>
+            <input type="number" placeholder="停損價" value={newItem.stopLoss}
+              onChange={(e) => setNewItem((p) => ({ ...p, stopLoss: e.target.value }))}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <div className="flex gap-2">
+              <button type="submit" className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors">新增</button>
+              <button type="button" onClick={() => setShowAddForm(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition-colors">取消</button>
+            </div>
           </div>
-        </div>
+        </form>
       )}
 
       {/* 觀察清單 */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {loading && <div className="py-12 text-center text-gray-400">載入中...</div>}
+        {!loading && (
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
@@ -143,9 +172,13 @@ export default function WatchlistPage() {
                   </tr>
                 )
               })}
+              {watchlist.length === 0 && (
+                <tr><td colSpan={8} className="py-8 text-center text-gray-400">尚無觀察清單</td></tr>
+              )}
             </tbody>
           </table>
         </div>
+        )}
       </div>
 
       {/* 說明 */}

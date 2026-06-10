@@ -1,3 +1,4 @@
+import { getRows } from '@/lib/sheets'
 import DonutChart from '@/components/dashboard/donut-chart'
 import BarChart from '@/components/fund-management/bar-chart'
 
@@ -7,38 +8,28 @@ const COLOR_MAP = {
   green:  { bg: 'bg-green-50',  border: 'border-green-200',  text: 'text-green-600'  },
 }
 
-const fundPools = [
-  {
-    id: 'regular',
-    name: '定期定額',
-    color: 'blue',
-    totalAsset: 520000,
-    cost: 480000,
-    profit: 40000,
-    profitRate: 8.33,
-    description: '每月穩健投資，長期複利成長',
-  },
-  {
-    id: 'loan',
-    name: '貸款資金',
-    color: 'purple',
-    totalAsset: 385000,
-    cost: 350000,
-    profit: 35000,
-    profitRate: 10.0,
-    description: '槓桿操作，追求高報酬',
-  },
-  {
-    id: 'idle',
-    name: '閒錢操作',
-    color: 'green',
-    totalAsset: 377000,
-    cost: 370000,
-    profit: 7000,
-    profitRate: 1.89,
-    description: '靈活進出，短線波段操作',
-  },
+const POOL_CONFIG = {
+  '定期定額': { id: 'regular', color: 'blue',   description: '每月穩健投資，長期複利成長' },
+  '貸款資金': { id: 'loan',    color: 'purple', description: '槓桿操作，追求高報酬' },
+  '閒錢操作': { id: 'idle',    color: 'green',  description: '靈活進出，短線波段操作' },
+}
+
+export function groupByFundSource(positions) {
+  const map = {}
+  for (const p of positions) {
+    if (!map[p.fundSource]) map[p.fundSource] = { cost: 0 }
+    map[p.fundSource].cost += p.shares * p.costPrice
+  }
+  return map
+}
+
+const LEGEND_ITEMS = [
+  { label: '定期定額', color: '#3b82f6' },
+  { label: '貸款資金', color: '#8b5cf6' },
+  { label: '閒錢操作', color: '#10b981' },
 ]
+
+const POOL_COLORS = { '定期定額': '#3b82f6', '貸款資金': '#8b5cf6', '閒錢操作': '#10b981' }
 
 const performanceComparison = [
   { month: '1月', 定期定額: 5.2,  貸款資金: 8.1,  閒錢操作:  2.3  },
@@ -47,12 +38,6 @@ const performanceComparison = [
   { month: '4月', 定期定額: 7.5,  貸款資金: 9.8,  閒錢操作:  1.5  },
   { month: '5月', 定期定額: 8.0,  貸款資金: 10.5, 閒錢操作:  1.2  },
   { month: '6月', 定期定額: 8.33, 貸款資金: 10.0, 閒錢操作:  1.89 },
-]
-
-const allocationData = [
-  { name: '定期定額', code: '', value: 520000, color: '#3b82f6' },
-  { name: '貸款資金', code: '', value: 385000, color: '#8b5cf6' },
-  { name: '閒錢操作', code: '', value: 377000, color: '#10b981' },
 ]
 
 function PoolIcon({ id, className }) {
@@ -79,16 +64,33 @@ function PoolIcon({ id, className }) {
   )
 }
 
-const LEGEND_ITEMS = [
-  { label: '定期定額', color: '#3b82f6' },
-  { label: '貸款資金', color: '#8b5cf6' },
-  { label: '閒錢操作', color: '#10b981' },
-]
+export default async function FundManagement() {
+  const rows = await getRows('持倉')
+  const positions = rows.map((row) => ({
+    fundSource: row['資金來源'],
+    shares: Number(row['股數']),
+    costPrice: Number(row['成本價']),
+  }))
 
-export default function FundManagement() {
-  const totalAssets = fundPools.reduce((sum, p) => sum + p.totalAsset, 0)
-  const totalProfit = fundPools.reduce((sum, p) => sum + p.profit, 0)
-  const totalProfitRate = (totalProfit / (totalAssets - totalProfit)) * 100
+  const grouped = groupByFundSource(positions)
+
+  const fundPools = Object.entries(POOL_CONFIG).map(([name, cfg]) => ({
+    ...cfg,
+    name,
+    cost: Math.round(grouped[name]?.cost ?? 0),
+    totalAsset: Math.round(grouped[name]?.cost ?? 0),
+    profit: 0,
+    profitRate: 0,
+  }))
+
+  const totalCost = fundPools.reduce((s, p) => s + p.cost, 0)
+
+  const allocationData = fundPools.map((p) => ({
+    name: p.name,
+    code: '',
+    value: p.cost,
+    color: POOL_COLORS[p.name],
+  }))
 
   return (
     <div className="p-6">
@@ -97,29 +99,21 @@ export default function FundManagement() {
         <p className="text-gray-500 mt-2">三種資金池的總覽與績效對比</p>
       </div>
 
-      {/* 總資產概覽 */}
       <div className="bg-linear-to-br from-slate-700 to-slate-900 rounded-xl shadow-lg p-8 mb-8 text-white">
         <div className="flex items-center gap-3 mb-4">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
             <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
             <polyline points="16 7 22 7 22 13"/>
           </svg>
-          <h2 className="text-xl font-semibold">總資產</h2>
+          <h2 className="text-xl font-semibold">總投入成本</h2>
         </div>
-        <p className="text-5xl font-bold mb-2">NT$ {totalAssets.toLocaleString()}</p>
-        <div className="flex items-baseline gap-4 text-lg">
-          <span className="text-gray-300">總損益</span>
-          <span className="text-green-400 font-semibold">
-            +NT$ {totalProfit.toLocaleString()} (+{totalProfitRate.toFixed(2)}%)
-          </span>
-        </div>
+        <p className="text-5xl font-bold mb-2">NT$ {totalCost.toLocaleString()}</p>
+        <p className="text-slate-300 text-sm">現值損益待 FinMind 串接後計算</p>
       </div>
 
-      {/* 三個資金池卡片 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {fundPools.map((pool) => {
           const c = COLOR_MAP[pool.color]
-          const isPositive = pool.profit >= 0
           return (
             <div key={pool.id} className={`bg-white rounded-xl shadow-sm p-6 border-2 ${c.border} transition-all`}>
               <div className="flex items-center gap-2 mb-1">
@@ -127,23 +121,10 @@ export default function FundManagement() {
                 <h3 className="text-lg font-bold text-gray-900">{pool.name}</h3>
               </div>
               <p className="text-sm text-gray-500 mb-4">{pool.description}</p>
-
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">資產淨值</p>
-                  <p className="text-2xl font-bold text-gray-900">NT$ {pool.totalAsset.toLocaleString()}</p>
-                </div>
-                <div className="flex justify-between items-center pt-3 border-t border-gray-100">
-                  <span className="text-sm text-gray-500">損益</span>
-                  <span className={`font-semibold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                    {isPositive ? '+' : ''}NT$ {pool.profit.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">報酬率</span>
-                  <span className={`text-lg font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                    {isPositive ? '+' : ''}{pool.profitRate.toFixed(2)}%
-                  </span>
+                  <p className="text-sm text-gray-500 mb-1">投入成本</p>
+                  <p className="text-2xl font-bold text-gray-900">NT$ {pool.cost.toLocaleString()}</p>
                 </div>
               </div>
             </div>
@@ -152,7 +133,6 @@ export default function FundManagement() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* 績效對比圖 */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">報酬率趨勢對比</h3>
           <div className="flex gap-4 mb-4">
@@ -166,57 +146,9 @@ export default function FundManagement() {
           <BarChart data={performanceComparison} />
         </div>
 
-        {/* 資金配置圓餅圖 */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">資金配置比例</h3>
           <DonutChart positions={allocationData} />
-        </div>
-      </div>
-
-      {/* 績效統計 */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900">績效統計比較</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                {['資金池', '投入成本', '目前資產', '損益金額', '報酬率'].map((h, i) => (
-                  <th key={h} className={`py-4 px-6 text-sm font-semibold text-gray-700 ${i === 0 ? 'text-left' : 'text-right'}`}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {fundPools.map((pool) => {
-                const c = COLOR_MAP[pool.color]
-                return (
-                  <tr key={`stat-${pool.id}`} className="hover:bg-gray-50 transition-colors">
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${c.bg} border-2 ${c.border}`} />
-                        <span className="font-semibold text-gray-900">{pool.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 text-right text-gray-700">NT$ {pool.cost.toLocaleString()}</td>
-                    <td className="py-4 px-6 text-right font-semibold text-gray-900">NT$ {pool.totalAsset.toLocaleString()}</td>
-                    <td className="py-4 px-6 text-right">
-                      <span className={`font-bold ${pool.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {pool.profit >= 0 ? '+' : ''}NT$ {pool.profit.toLocaleString()}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-right">
-                      <span className={`text-lg font-bold ${pool.profitRate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {pool.profitRate >= 0 ? '+' : ''}{pool.profitRate.toFixed(2)}%
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>

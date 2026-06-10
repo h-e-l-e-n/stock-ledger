@@ -2,6 +2,8 @@ import { getRows } from '@/lib/sheets'
 import StatCard from '@/components/dashboard/stat-card'
 import PositionsTable from '@/components/positions/positions-table'
 
+export const dynamic = 'force-dynamic'
+
 export default async function PositionsPage() {
   let positions = []
   try {

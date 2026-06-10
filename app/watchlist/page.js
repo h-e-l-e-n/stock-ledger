@@ -19,18 +19,16 @@ export default function WatchlistPage() {
   function loadWatchlist() {
     setLoading(true)
     fetch('/api/watchlist')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
       .then(setWatchlist)
+      .catch(() => setWatchlist([]))
       .finally(() => setLoading(false))
   }
 
   useEffect(() => { loadWatchlist() }, [])
-
-  const toggleAlert = (symbol) => {
-    setWatchlist(watchlist.map((item) =>
-      item.symbol === symbol ? { ...item, alertEnabled: !item.alertEnabled } : item
-    ))
-  }
 
   const handleAdd = async (e) => {
     e.preventDefault()
@@ -110,7 +108,7 @@ export default function WatchlistPage() {
                 {['現價', '漲跌', '目標價', '停損價'].map((h) => (
                   <th key={h} className="text-right py-4 px-6 text-sm font-semibold text-gray-700">{h}</th>
                 ))}
-                {['提示', '通知'].map((h) => (
+                {['提示'].map((h) => (
                   <th key={h} className="text-center py-4 px-6 text-sm font-semibold text-gray-700">{h}</th>
                 ))}
               </tr>
@@ -148,32 +146,11 @@ export default function WatchlistPage() {
                         <span className="inline-block px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium">接近停損價</span>
                       )}
                     </td>
-                    <td className="py-4 px-6 text-center">
-                      <button
-                        onClick={() => toggleAlert(item.symbol)}
-                        className={`p-2 rounded-lg transition-colors ${item.alertEnabled ? 'bg-blue-100 text-blue-600 hover:bg-blue-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}
-                      >
-                        {item.alertEnabled ? (
-                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                            <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                            <path d="M13.73 21a2 2 0 01-3.46 0"/>
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                            <path d="M13.73 21a2 2 0 01-3.46 0"/>
-                            <path d="M18.63 13A17.89 17.89 0 0118 8"/>
-                            <path d="M6.26 6.26A5.86 5.86 0 006 8c0 7-3 9-3 9h14"/>
-                            <path d="M18 8a6 6 0 00-9.33-5"/>
-                            <line x1="1" y1="1" x2="23" y2="23"/>
-                          </svg>
-                        )}
-                      </button>
-                    </td>
                   </tr>
                 )
               })}
               {watchlist.length === 0 && (
-                <tr><td colSpan={8} className="py-8 text-center text-gray-400">尚無觀察清單</td></tr>
+                <tr><td colSpan={7} className="py-8 text-center text-gray-400">尚無觀察清單</td></tr>
               )}
             </tbody>
           </table>
@@ -186,7 +163,6 @@ export default function WatchlistPage() {
         <h4 className="font-semibold text-blue-900 mb-2">提示說明</h4>
         <ul className="text-sm text-blue-800 space-y-1">
           <li>• 當現價接近目標價或停損價（±5%）時，會自動標示提示</li>
-          <li>• 開啟通知後，達到目標價或停損價時會收到提醒</li>
           <li>• 即時報價資料每分鐘更新一次</li>
         </ul>
       </div>

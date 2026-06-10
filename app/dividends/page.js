@@ -1,5 +1,7 @@
 import { getRows } from '@/lib/sheets'
 
+export const dynamic = 'force-dynamic'
+
 export function aggregateDividends(records) {
   const yearMap = {}
   const stockMap = {}

@@ -25,8 +25,12 @@ export default function NotesPage() {
   function loadNotes() {
     setLoading(true)
     fetch('/api/notes')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
       .then(setNotes)
+      .catch(() => setNotes([]))
       .finally(() => setLoading(false))
   }
 

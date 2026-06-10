@@ -18,8 +18,12 @@ export default function TradesPage() {
 
   useEffect(() => {
     fetch('/api/trades')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
       .then(setTrades)
+      .catch(() => setTrades([]))
       .finally(() => setLoading(false))
   }, [])
 

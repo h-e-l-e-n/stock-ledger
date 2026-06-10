@@ -2,6 +2,8 @@ import { getRows } from '@/lib/sheets'
 import DonutChart from '@/components/dashboard/donut-chart'
 import BarChart from '@/components/fund-management/bar-chart'
 
+export const dynamic = 'force-dynamic'
+
 const COLOR_MAP = {
   blue:   { bg: 'bg-blue-50',   border: 'border-blue-200',   text: 'text-blue-600'   },
   purple: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-600' },

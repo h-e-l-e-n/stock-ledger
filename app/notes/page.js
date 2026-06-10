@@ -1,55 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-
-const mockNotes = [
-  {
-    id: 1,
-    symbol: '2330',
-    name: '台積電',
-    date: '2026-05-15',
-    strategy: '長期',
-    buyReason: '全球AI晶片需求強勁,3nm製程技術領先,CoWoS產能擴充,預期營收持續成長',
-    expectedResult: '目標價650元,預期持有3-6個月',
-    status: '持有中',
-  },
-  {
-    id: 2,
-    symbol: '2454',
-    name: '聯發科',
-    date: '2026-04-20',
-    strategy: '波段',
-    buyReason: '旗艦手機晶片市占率提升,AI PC處理器開始量產,毛利率改善',
-    sellReason: '達到目標價位,技術面出現頂背離訊號',
-    expectedResult: '目標價1150元,預期報酬率10%',
-    actualResult: '實際賣出1120元,報酬率8.5%',
-    review: '策略執行良好,但賣出時機略早,可以再等待突破1150元再賣',
-    status: '已結束',
-  },
-  {
-    id: 3,
-    symbol: '2317',
-    name: '鴻海',
-    date: '2026-06-01',
-    strategy: '短線',
-    buyReason: '電動車訂單消息面利多,短線突破季線,量能放大',
-    expectedResult: '目標價110元,停損102元',
-    status: '持有中',
-  },
-  {
-    id: 4,
-    symbol: '2882',
-    name: '國泰金',
-    date: '2026-03-10',
-    strategy: '長期',
-    buyReason: '配息穩定,殖利率5%以上,金融股本益比偏低',
-    sellReason: '達到預定報酬率,資金配置需求調整',
-    expectedResult: '長期持有領息,目標殖利率5%',
-    actualResult: '持有3個月,領息+價差報酬7.2%',
-    review: '配息策略成功,但賣出後股價續漲,可考慮降低賣出比例',
-    status: '已結束',
-  },
-]
+import { useState, useEffect } from 'react'
 
 function getStrategyColor(strategy) {
   switch (strategy) {
@@ -63,30 +14,43 @@ function getStrategyColor(strategy) {
 const EMPTY_FORM = { symbol: '', name: '', strategy: '長期', buyReason: '', sellReason: '', expectedResult: '', status: '持有中' }
 
 export default function NotesPage() {
-  const [notes, setNotes] = useState(mockNotes)
+  const [notes, setNotes] = useState([])
+  const [loading, setLoading] = useState(true)
   const [filterStrategy, setFilterStrategy] = useState('全部')
   const [filterStatus, setFilterStatus] = useState('全部')
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
 
+  function loadNotes() {
+    setLoading(true)
+    fetch('/api/notes')
+      .then((r) => r.json())
+      .then(setNotes)
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { loadNotes() }, [])
+
   const handleFormChange = (e) => {
     const { name, value } = e.target
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleAddNote = (e) => {
+  const handleAddNote = async (e) => {
     e.preventDefault()
     if (!form.symbol || !form.buyReason) return
-    const newNote = {
-      id: notes.length + 1,
-      date: new Date().toISOString().slice(0, 10),
-      ...form,
-      sellReason: form.sellReason || undefined,
-    }
-    setNotes([newNote, ...notes])
+    await fetch('/api/notes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date: new Date().toISOString().slice(0, 10),
+        ...form,
+      }),
+    })
     setForm(EMPTY_FORM)
     setShowAddForm(false)
+    loadNotes()
   }
 
   const filteredNotes = notes.filter((note) => {
@@ -225,6 +189,7 @@ export default function NotesPage() {
       </div>
 
       {/* 筆記卡片列表 */}
+      {loading && <div className="py-12 text-center text-gray-400">載入中...</div>}
       <div className="grid grid-cols-1 gap-6">
         {filteredNotes.map((note) => (
           <div key={note.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">

@@ -48,3 +48,10 @@ describe('sortRows', () => {
     expect(rows[2].code).toBe(original[2])
   })
 })
+
+test('sortRows handles null currentPrice without throwing', () => {
+  const rows = [
+    { code: '2330', name: '台積電', shares: 100, costPrice: 520, currentPrice: null },
+  ]
+  expect(() => sortRows(rows, 'costPrice', 'asc')).not.toThrow()
+})

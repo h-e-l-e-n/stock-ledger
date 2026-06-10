@@ -32,10 +32,10 @@ export default function PositionsTable({ positions = [] }) {
   const rows = sortRows(
     positions.map((p) => ({
       ...p,
-      pnlAmount: (p.currentPrice - p.costPrice) * p.shares,
-      pnlPct: p.costPrice !== 0
+      pnlAmount: p.currentPrice != null ? (p.currentPrice - p.costPrice) * p.shares : null,
+      pnlPct: p.currentPrice != null && p.costPrice !== 0
         ? (p.currentPrice - p.costPrice) / p.costPrice * 100
-        : 0,
+        : null,
     })),
     sortKey,
     sortDir,
@@ -74,12 +74,18 @@ export default function PositionsTable({ positions = [] }) {
               <td className="px-4 py-3 text-sm text-gray-700">{row.name}</td>
               <td className="px-4 py-3 text-sm text-right text-gray-700">{row.shares.toLocaleString('en-US')}</td>
               <td className="px-4 py-3 text-sm text-right text-gray-700">NT$ {row.costPrice.toLocaleString('en-US')}</td>
-              <td className="px-4 py-3 text-sm text-right text-gray-700">NT$ {row.currentPrice.toLocaleString('en-US')}</td>
-              <td className={`px-4 py-3 text-sm text-right font-medium ${pnlColor(row.pnlAmount)}`}>
-                NT$ {row.pnlAmount > 0 ? '+' : row.pnlAmount < 0 ? '-' : ''}{Math.abs(row.pnlAmount).toLocaleString('en-US')}
+              <td className="px-4 py-3 text-sm text-right text-gray-700">
+                {row.currentPrice != null ? `NT$ ${row.currentPrice.toLocaleString('en-US')}` : '—'}
               </td>
-              <td className={`px-4 py-3 text-sm text-right font-medium ${pnlColor(row.pnlPct)}`}>
-                {row.pnlPct > 0 ? '+' : row.pnlPct < 0 ? '-' : ''}{Math.abs(row.pnlPct).toFixed(2)}%
+              <td className={`px-4 py-3 text-sm text-right font-medium ${row.pnlAmount != null ? pnlColor(row.pnlAmount) : 'text-gray-400'}`}>
+                {row.pnlAmount != null
+                  ? `NT$ ${row.pnlAmount > 0 ? '+' : row.pnlAmount < 0 ? '-' : ''}${Math.abs(row.pnlAmount).toLocaleString('en-US')}`
+                  : '—'}
+              </td>
+              <td className={`px-4 py-3 text-sm text-right font-medium ${row.pnlPct != null ? pnlColor(row.pnlPct) : 'text-gray-400'}`}>
+                {row.pnlPct != null
+                  ? `${row.pnlPct > 0 ? '+' : row.pnlPct < 0 ? '-' : ''}${Math.abs(row.pnlPct).toFixed(2)}%`
+                  : '—'}
               </td>
             </tr>
           ))}

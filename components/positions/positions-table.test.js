@@ -55,3 +55,15 @@ test('sortRows handles null currentPrice without throwing', () => {
   ]
   expect(() => sortRows(rows, 'costPrice', 'asc')).not.toThrow()
 })
+
+test('sortRows pushes null pnlAmount to end when sorting ascending', () => {
+  const rows = [
+    { code: 'A', pnlAmount: 1000 },
+    { code: 'B', pnlAmount: null },
+    { code: 'C', pnlAmount: -500 },
+  ]
+  const sorted = sortRows(rows, 'pnlAmount', 'asc')
+  expect(sorted[0].code).toBe('C')
+  expect(sorted[1].code).toBe('A')
+  expect(sorted[2].code).toBe('B')
+})

@@ -16,3 +16,13 @@ test('returns zero cost for missing fund source', () => {
   const result = groupByFundSource(positions)
   expect(result['閒錢操作']).toBeUndefined()
 })
+
+test('ignores positions with blank fundSource', () => {
+  const withBlank = [
+    { fundSource: '定期定額', shares: 100, costPrice: 520 },
+    { fundSource: '',        shares: 50,  costPrice: 100 },
+  ]
+  const result = groupByFundSource(withBlank)
+  expect(result['定期定額'].cost).toBe(100 * 520)
+  expect(result['']).toBeUndefined()
+})

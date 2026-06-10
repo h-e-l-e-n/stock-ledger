@@ -3,14 +3,19 @@ import StatCard from '@/components/dashboard/stat-card'
 import PositionsTable from '@/components/positions/positions-table'
 
 export default async function PositionsPage() {
-  const rows = await getRows('持倉')
-  const positions = rows.map((row) => ({
-    code: row['股票代號'],
-    name: row['股票名稱'],
-    shares: Number(row['股數']),
-    costPrice: Number(row['成本價']),
-    currentPrice: null,
-  }))
+  let positions = []
+  try {
+    const rows = await getRows('持倉')
+    positions = rows.map((row) => ({
+      code: row['股票代號'],
+      name: row['股票名稱'],
+      shares: Number(row['股數']),
+      costPrice: Number(row['成本價']),
+      currentPrice: null,
+    }))
+  } catch (err) {
+    console.error('Failed to load positions:', err.message)
+  }
 
   const totalCost = positions.reduce((s, p) => s + p.costPrice * p.shares, 0)
 

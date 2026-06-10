@@ -17,6 +17,7 @@ const POOL_CONFIG = {
 export function groupByFundSource(positions) {
   const map = {}
   for (const p of positions) {
+    if (!p.fundSource) continue
     if (!map[p.fundSource]) map[p.fundSource] = { cost: 0 }
     map[p.fundSource].cost += p.shares * p.costPrice
   }
@@ -65,12 +66,17 @@ function PoolIcon({ id, className }) {
 }
 
 export default async function FundManagement() {
-  const rows = await getRows('持倉')
-  const positions = rows.map((row) => ({
-    fundSource: row['資金來源'],
-    shares: Number(row['股數']),
-    costPrice: Number(row['成本價']),
-  }))
+  let positions = []
+  try {
+    const rows = await getRows('持倉')
+    positions = rows.map((row) => ({
+      fundSource: row['資金來源'],
+      shares: Number(row['股數']),
+      costPrice: Number(row['成本價']),
+    }))
+  } catch (err) {
+    console.error('Failed to load positions for fund management:', err.message)
+  }
 
   const grouped = groupByFundSource(positions)
 

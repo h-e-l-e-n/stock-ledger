@@ -72,14 +72,19 @@ function DividendBarChart({ data }) {
 }
 
 export default async function DividendsPage() {
-  const rows = await getRows('股利記錄')
-  const records = rows.map((row) => ({
-    date: row['日期'],
-    symbol: row['股票代號'],
-    name: row['股票名稱'],
-    amount: Number(row['實領金額']),
-    yield: Number(row['殖利率']),
-  }))
+  let records = []
+  try {
+    const rows = await getRows('股利記錄')
+    records = rows.map((row) => ({
+      date: row['日期'],
+      symbol: row['股票代號'],
+      name: row['股票名稱'],
+      amount: Number(row['實領金額']),
+      yield: Number(row['殖利率']),
+    }))
+  } catch (err) {
+    console.error('Failed to load dividends:', err.message)
+  }
 
   const { yearlyDividends, stockDividends } = aggregateDividends(records)
   const totalDividends = stockDividends.reduce((s, d) => s + d.totalDividends, 0)

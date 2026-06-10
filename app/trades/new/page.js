@@ -9,16 +9,35 @@ export default function NewTradePage() {
     type: '買入',
     fundSource: '定期定額',
     symbol: '',
+    name: '',
     shares: '',
     price: '',
     date: new Date().toISOString().split('T')[0],
     fee: '',
-    notes: '',
   })
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    console.log('提交交易:', formData)
+    const shares = parseFloat(formData.shares) || 0
+    const price = parseFloat(formData.price) || 0
+    const fee = parseFloat(formData.fee) || 0
+    const amount = shares * price * 1000
+
+    await fetch('/api/trades', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date: formData.date,
+        type: formData.type,
+        fundSource: formData.fundSource,
+        symbol: formData.symbol,
+        name: formData.name,
+        shares,
+        price,
+        amount,
+        fee,
+      }),
+    })
     router.push('/trades')
   }
 
@@ -112,6 +131,13 @@ export default function NewTradePage() {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">股票名稱</label>
+                <input type="text" name="name" value={formData.name} onChange={handleChange}
+                  placeholder="例如: 台積電"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   股數 (張) <span className="text-red-500">*</span>
                 </label>
@@ -155,14 +181,6 @@ export default function NewTradePage() {
                 </div>
               </div>
             )}
-          </div>
-
-          {/* 交易理由備註 */}
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <label className="block text-sm font-medium text-gray-700 mb-2">交易理由備註</label>
-            <textarea name="notes" value={formData.notes} onChange={handleChange}
-              rows={4} placeholder="記錄這次交易的理由、策略或其他備註..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
           </div>
 
           {/* 提交按鈕 */}

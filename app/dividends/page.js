@@ -1,18 +1,33 @@
-const yearlyDividends = [
-  { year: '2022', amount: 12500 },
-  { year: '2023', amount: 18200 },
-  { year: '2024', amount: 24800 },
-  { year: '2025', amount: 31200 },
-  { year: '2026', amount: 15600 },
-]
+import { getRows } from '@/lib/sheets'
 
-const stockDividends = [
-  { symbol: '2330', name: '台積電', totalDividends: 32000, avgYield: 2.8 },
-  { symbol: '2454', name: '聯發科', totalDividends: 28500, avgYield: 3.2 },
-  { symbol: '2882', name: '國泰金', totalDividends: 18900, avgYield: 5.5 },
-  { symbol: '2412', name: '中華電', totalDividends: 14200, avgYield: 4.8 },
-  { symbol: '2317', name: '鴻海',   totalDividends: 8700,  avgYield: 4.2 },
-]
+export function aggregateDividends(records) {
+  const yearMap = {}
+  const stockMap = {}
+
+  for (const r of records) {
+    const year = r.date.slice(0, 4)
+    yearMap[year] = (yearMap[year] || 0) + r.amount
+
+    if (!stockMap[r.symbol]) {
+      stockMap[r.symbol] = { symbol: r.symbol, name: r.name, totalDividends: 0, yields: [] }
+    }
+    stockMap[r.symbol].totalDividends += r.amount
+    if (r.yield) stockMap[r.symbol].yields.push(r.yield)
+  }
+
+  const yearlyDividends = Object.entries(yearMap)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([year, amount]) => ({ year, amount }))
+
+  const stockDividends = Object.values(stockMap).map((s) => ({
+    symbol: s.symbol,
+    name: s.name,
+    totalDividends: s.totalDividends,
+    avgYield: s.yields.length ? s.yields.reduce((a, b) => a + b, 0) / s.yields.length : 0,
+  }))
+
+  return { yearlyDividends, stockDividends }
+}
 
 const W = 480, H = 220
 const PL = 52, PR = 16, PT = 12, PB = 28
@@ -20,28 +35,26 @@ const CW = W - PL - PR
 const CH = H - PT - PB
 const Y_MAX = 35000
 const BAR_W = 48
-const GROUP_W = CW / yearlyDividends.length
 const Y_LABELS = [0, 10000, 20000, 30000]
 
 function toY(v) {
   return PT + CH - (v / Y_MAX) * CH
 }
 
-function DividendBarChart() {
+function DividendBarChart({ data }) {
+  if (data.length === 0) return <p className="text-gray-400 text-sm py-8 text-center">尚無股利資料</p>
+  const GROUP_W = CW / data.length
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" aria-hidden="true" className="overflow-visible">
       {Y_LABELS.map((v) => (
         <g key={v}>
-          <line
-            x1={PL} y1={toY(v)} x2={W - PR} y2={toY(v)}
-            stroke={v === 0 ? '#9ca3af' : '#e5e7eb'} strokeWidth={1}
-          />
+          <line x1={PL} y1={toY(v)} x2={W - PR} y2={toY(v)} stroke={v === 0 ? '#9ca3af' : '#e5e7eb'} strokeWidth={1} />
           <text x={PL - 6} y={toY(v) + 4} textAnchor="end" fontSize={10} fill="#9ca3af">
             {v === 0 ? '0' : `${v / 1000}K`}
           </text>
         </g>
       ))}
-      {yearlyDividends.map((d, i) => {
+      {data.map((d, i) => {
         const barX = PL + i * GROUP_W + (GROUP_W - BAR_W) / 2
         const barY = toY(d.amount)
         const barH = CH - (barY - PT)
@@ -58,8 +71,24 @@ function DividendBarChart() {
   )
 }
 
-export default function DividendsPage() {
-  const totalDividends = stockDividends.reduce((sum, s) => sum + s.totalDividends, 0)
+export default async function DividendsPage() {
+  const rows = await getRows('股利記錄')
+  const records = rows.map((row) => ({
+    date: row['日期'],
+    symbol: row['股票代號'],
+    name: row['股票名稱'],
+    amount: Number(row['實領金額']),
+    yield: Number(row['殖利率']),
+  }))
+
+  const { yearlyDividends, stockDividends } = aggregateDividends(records)
+  const totalDividends = stockDividends.reduce((s, d) => s + d.totalDividends, 0)
+  const currentYear = new Date().getFullYear().toString()
+  const thisYearTotal = yearlyDividends.find((y) => y.year === currentYear)?.amount ?? 0
+  const lastYearTotal = yearlyDividends.find((y) => y.year === (Number(currentYear) - 1).toString())?.amount ?? 0
+  const avgYield = stockDividends.length
+    ? stockDividends.reduce((s, d) => s + d.avgYield, 0) / stockDividends.length
+    : 0
 
   return (
     <main className="p-8">
@@ -68,7 +97,6 @@ export default function DividendsPage() {
         <p className="text-gray-500 mt-2">歷年配息與殖利率統計</p>
       </div>
 
-      {/* 累計股利總覽 */}
       <div className="bg-linear-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg p-8 mb-8 text-white">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-3 bg-white/20 rounded-lg">
@@ -83,13 +111,11 @@ export default function DividendsPage() {
         <p className="text-green-100">歷年累積配息收入</p>
       </div>
 
-      {/* 年度股利長條圖 */}
       <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-8">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">年度股利收入趨勢</h3>
-        <DividendBarChart />
+        <DividendBarChart data={yearlyDividends} />
       </div>
 
-      {/* 各股殖利率表格 */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900">各股殖利率統計</h3>
@@ -121,24 +147,26 @@ export default function DividendsPage() {
                   </td>
                 </tr>
               ))}
+              {stockDividends.length === 0 && (
+                <tr><td colSpan={4} className="py-8 text-center text-gray-400">尚無股利資料</td></tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* 股利統計 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-sm text-gray-500 mb-2">今年累計股利</h3>
-          <p className="text-3xl font-bold text-gray-900">NT$ 15,600</p>
+          <p className="text-3xl font-bold text-gray-900">NT$ {thisYearTotal.toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-sm text-gray-500 mb-2">去年總股利</h3>
-          <p className="text-3xl font-bold text-gray-900">NT$ 31,200</p>
+          <p className="text-3xl font-bold text-gray-900">NT$ {lastYearTotal.toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h3 className="text-sm text-gray-500 mb-2">平均年化殖利率</h3>
-          <p className="text-3xl font-bold text-green-600">3.8%</p>
+          <p className="text-3xl font-bold text-green-600">{avgYield.toFixed(1)}%</p>
         </div>
       </div>
     </main>

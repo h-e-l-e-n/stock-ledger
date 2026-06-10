@@ -1,19 +1,18 @@
+import { getRows } from '@/lib/sheets'
 import StatCard from '@/components/dashboard/stat-card'
 import PositionsTable from '@/components/positions/positions-table'
 
-const mockPositions = [
-  { code: '2317', name: '鴻海',   shares: 200, costPrice: 108,  currentPrice: 105  },
-  { code: '2330', name: '台積電', shares: 100, costPrice: 520,  currentPrice: 580  },
-  { code: '2412', name: '中華電', shares: 80,  costPrice: 118,  currentPrice: 120  },
-  { code: '2454', name: '聯發科', shares: 50,  costPrice: 1050, currentPrice: 1120 },
-  { code: '2882', name: '國泰金', shares: 150, costPrice: 42,   currentPrice: 45   },
-]
+export default async function PositionsPage() {
+  const rows = await getRows('持倉')
+  const positions = rows.map((row) => ({
+    code: row['股票代號'],
+    name: row['股票名稱'],
+    shares: Number(row['股數']),
+    costPrice: Number(row['成本價']),
+    currentPrice: null,
+  }))
 
-export default function PositionsPage() {
-  const totalValue = mockPositions.reduce((s, p) => s + p.currentPrice * p.shares, 0)
-  const totalPnl = mockPositions.reduce((s, p) => s + (p.currentPrice - p.costPrice) * p.shares, 0)
-  const pnlPct = (totalPnl / (totalValue - totalPnl)) * 100
-  const pnlSign = totalPnl > 0 ? '+' : totalPnl < 0 ? '-' : ''
+  const totalCost = positions.reduce((s, p) => s + p.costPrice * p.shares, 0)
 
   return (
     <main className="p-8">
@@ -23,16 +22,12 @@ export default function PositionsPage() {
       </div>
 
       <div className="grid grid-cols-3 gap-5 mb-8">
-        <StatCard label="持倉總市值" value={`NT$ ${totalValue.toLocaleString()}`} />
-        <StatCard
-          label="總損益"
-          value={`NT$ ${pnlSign}${Math.abs(totalPnl).toLocaleString()}`}
-          change={pnlPct}
-        />
-        <StatCard label="持股檔數" value={`${mockPositions.length}`} />
+        <StatCard label="持倉成本" value={`NT$ ${totalCost.toLocaleString()}`} />
+        <StatCard label="總損益" value="—" />
+        <StatCard label="持股檔數" value={`${positions.length}`} />
       </div>
 
-      <PositionsTable positions={mockPositions} />
+      <PositionsTable positions={positions} />
     </main>
   )
 }

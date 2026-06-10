@@ -1,16 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-
-const mockTrades = [
-  { id: 1, date: '2026-06-05', type: '買入', fundSource: '定期定額', symbol: '2330', name: '台積電', shares: 10, price: 580,  amount: 5800, fee: 29 },
-  { id: 2, date: '2026-06-03', type: '賣出', fundSource: '閒錢操作', symbol: '2454', name: '聯發科', shares: 5,  price: 1120, amount: 5600, fee: 84 },
-  { id: 3, date: '2026-06-01', type: '買入', fundSource: '貸款資金', symbol: '2317', name: '鴻海',   shares: 20, price: 105,  amount: 2100, fee: 11 },
-  { id: 4, date: '2026-05-28', type: '買入', fundSource: '定期定額', symbol: '2882', name: '國泰金', shares: 50, price: 42,   amount: 2100, fee: 11 },
-  { id: 5, date: '2026-05-25', type: '賣出', fundSource: '閒錢操作', symbol: '2412', name: '中華電', shares: 30, price: 118,  amount: 3540, fee: 53 },
-  { id: 6, date: '2026-05-20', type: '買入', fundSource: '定期定額', symbol: '2330', name: '台積電', shares: 15, price: 520,  amount: 7800, fee: 39 },
-]
 
 const FUND_SOURCE_COLOR = {
   '定期定額': 'bg-blue-100 text-blue-700',
@@ -19,11 +10,20 @@ const FUND_SOURCE_COLOR = {
 }
 
 export default function TradesPage() {
+  const [trades, setTrades] = useState([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState('全部')
   const [filterFund, setFilterFund] = useState('全部')
 
-  const filteredTrades = mockTrades.filter((trade) => {
+  useEffect(() => {
+    fetch('/api/trades')
+      .then((r) => r.json())
+      .then(setTrades)
+      .finally(() => setLoading(false))
+  }, [])
+
+  const filteredTrades = trades.filter((trade) => {
     const matchesSearch = searchTerm === '' || trade.symbol.includes(searchTerm) || trade.name.includes(searchTerm)
     const matchesType = filterType === '全部' || trade.type === filterType
     const matchesFund = filterFund === '全部' || trade.fundSource === filterFund
@@ -157,7 +157,10 @@ export default function TradesPage() {
           </table>
         </div>
 
-        {filteredTrades.length === 0 && (
+        {loading && (
+          <div className="py-12 text-center text-gray-400">載入中...</div>
+        )}
+        {!loading && filteredTrades.length === 0 && (
           <div className="py-12 text-center text-gray-500">沒有符合條件的交易記錄</div>
         )}
       </div>

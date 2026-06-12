@@ -193,7 +193,7 @@ export default function WatchlistPage() {
         <h4 className="font-semibold text-blue-900 mb-2">提示說明</h4>
         <ul className="text-sm text-blue-800 space-y-1">
           <li>• 當現價接近目標價或停損價（±5%）時，會自動標示提示</li>
-          <li>• 即時報價資料每分鐘更新一次</li>
+          <li>• 股價資料於每日收盤後更新，重新載入頁面即可取得最新數據</li>
         </ul>
       </div>
     </main>

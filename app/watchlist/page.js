@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react'
 
 function isPriceNearTarget(current, target) {
+  if (current == null || !target) return false
   return Math.abs((current - target) / target) < 0.05
 }
 
 function isPriceNearStopLoss(current, stopLoss) {
+  if (current == null || !stopLoss) return false
   return Math.abs((current - stopLoss) / stopLoss) < 0.05
 }
 
@@ -23,7 +25,28 @@ export default function WatchlistPage() {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()
       })
-      .then(setWatchlist)
+      .then(async (items) => {
+        if (items.length === 0) {
+          setWatchlist([])
+          return
+        }
+        const symbols = items.map((i) => i.symbol).join(',')
+        let prices = {}
+        try {
+          const priceRes = await fetch(`/api/prices?symbols=${symbols}`)
+          if (priceRes.ok) prices = await priceRes.json()
+        } catch {
+          // prices stay empty, UI degrades gracefully
+        }
+        setWatchlist(
+          items.map((item) => ({
+            ...item,
+            currentPrice: prices[item.symbol]?.price ?? null,
+            change: prices[item.symbol]?.change ?? null,
+            changePercent: prices[item.symbol]?.changePercent ?? null,
+          }))
+        )
+      })
       .catch(() => setWatchlist([]))
       .finally(() => setLoading(false))
   }
@@ -117,24 +140,31 @@ export default function WatchlistPage() {
               {watchlist.map((item) => {
                 const nearTarget = isPriceNearTarget(item.currentPrice, item.targetPrice)
                 const nearStopLoss = isPriceNearStopLoss(item.currentPrice, item.stopLoss)
-                const up = item.change >= 0
 
                 return (
                   <tr key={item.symbol} className={`hover:bg-gray-50 transition-colors ${nearTarget || nearStopLoss ? 'bg-yellow-50' : ''}`}>
                     <td className="py-4 px-6 font-mono font-semibold text-gray-900">{item.symbol}</td>
                     <td className="py-4 px-6 font-medium text-gray-700">{item.name}</td>
-                    <td className="py-4 px-6 text-right font-semibold text-gray-900">NT$ {item.currentPrice.toFixed(2)}</td>
+                    <td className="py-4 px-6 text-right font-semibold text-gray-900">
+                      {item.currentPrice != null ? `NT$ ${item.currentPrice.toFixed(2)}` : '—'}
+                    </td>
                     <td className="py-4 px-6 text-right">
-                      <div className={`flex items-center justify-end gap-1 ${up ? 'text-green-600' : 'text-red-600'}`}>
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                          {up
-                            ? <><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></>
-                            : <><line x1="7" y1="7" x2="17" y2="17"/><polyline points="17 7 17 17 7 17"/></>
-                          }
-                        </svg>
-                        <span className="font-semibold">{up ? '+' : ''}{item.change.toFixed(2)}</span>
-                        <span className="text-sm">({up ? '+' : ''}{item.changePercent.toFixed(2)}%)</span>
-                      </div>
+                      {item.change != null ? (
+                        <div className={`flex items-center justify-end gap-1 ${item.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                            {item.change >= 0
+                              ? <><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></>
+                              : <><line x1="7" y1="7" x2="17" y2="17"/><polyline points="17 7 17 17 7 17"/></>
+                            }
+                          </svg>
+                          <span className="font-semibold">
+                            {item.change >= 0 ? '+' : ''}{item.change.toFixed(2)}
+                          </span>
+                          <span className="text-sm">
+                            ({item.change >= 0 ? '+' : ''}{item.changePercent.toFixed(2)}%)
+                          </span>
+                        </div>
+                      ) : '—'}
                     </td>
                     <td className="py-4 px-6 text-right text-gray-700">NT$ {item.targetPrice.toFixed(2)}</td>
                     <td className="py-4 px-6 text-right text-gray-700">NT$ {item.stopLoss.toFixed(2)}</td>

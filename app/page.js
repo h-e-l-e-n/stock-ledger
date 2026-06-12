@@ -103,7 +103,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-sm">
-          <TradesTable trades={recentTrades} />
+          <TradesTable trades={recentTrades} limit={5} />
         </div>
       </div>
     </main>

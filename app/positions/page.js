@@ -1,4 +1,5 @@
 import { getRows } from '@/lib/sheets'
+import { getPrices } from '@/lib/prices'
 import StatCard from '@/components/dashboard/stat-card'
 import PositionsTable from '@/components/positions/positions-table'
 
@@ -8,18 +9,30 @@ export default async function PositionsPage() {
   let positions = []
   try {
     const rows = await getRows('持倉')
-    positions = rows.map((row) => ({
+    const rawPositions = rows.map((row) => ({
       code: row['股票代號'],
       name: row['股票名稱'],
       shares: Number(row['股數']),
       costPrice: Number(row['成本價']),
-      currentPrice: null,
+    }))
+
+    const symbols = [...new Set(rawPositions.map((p) => p.code))]
+    const prices = symbols.length > 0 ? await getPrices(symbols) : {}
+
+    positions = rawPositions.map((p) => ({
+      ...p,
+      currentPrice: prices[p.code]?.price ?? null,
     }))
   } catch (err) {
     console.error('Failed to load positions:', err.message)
   }
 
   const totalCost = positions.reduce((s, p) => s + p.costPrice * p.shares, 0)
+
+  const pricedPositions = positions.filter((p) => p.currentPrice != null)
+  const totalPnl = pricedPositions.length > 0
+    ? pricedPositions.reduce((s, p) => s + (p.currentPrice - p.costPrice) * p.shares, 0)
+    : null
 
   return (
     <main className="p-8">
@@ -29,8 +42,11 @@ export default async function PositionsPage() {
       </div>
 
       <div className="grid grid-cols-3 gap-5 mb-8">
-        <StatCard label="持倉成本" value={`NT$ ${totalCost.toLocaleString()}`} />
-        <StatCard label="總損益" value="—" />
+        <StatCard label="持倉成本" value={`NT$ ${Math.round(totalCost).toLocaleString()}`} />
+        <StatCard
+          label="總損益"
+          value={totalPnl != null ? `NT$ ${Math.round(totalPnl).toLocaleString()}` : '—'}
+        />
         <StatCard label="持股檔數" value={`${positions.length}`} />
       </div>
 

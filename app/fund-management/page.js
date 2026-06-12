@@ -1,4 +1,5 @@
 import { getRows } from '@/lib/sheets'
+import { getPrices } from '@/lib/prices'
 import DonutChart from '@/components/dashboard/donut-chart'
 import BarChart from '@/components/fund-management/bar-chart'
 
@@ -16,12 +17,15 @@ const POOL_CONFIG = {
   '閒錢操作': { id: 'idle',    color: 'green',  description: '靈活進出，短線波段操作' },
 }
 
-export function groupByFundSource(positions) {
+export function groupByFundSource(positions, prices = {}) {
   const map = {}
   for (const p of positions) {
     if (!p.fundSource) continue
-    if (!map[p.fundSource]) map[p.fundSource] = { cost: 0 }
-    map[p.fundSource].cost += p.shares * p.costPrice
+    if (!map[p.fundSource]) map[p.fundSource] = { cost: 0, totalAsset: 0 }
+    const posCost = p.shares * p.costPrice
+    const currentPrice = prices[p.code]?.price
+    map[p.fundSource].cost += posCost
+    map[p.fundSource].totalAsset += currentPrice != null ? p.shares * currentPrice : posCost
   }
   return map
 }
@@ -72,6 +76,7 @@ export default async function FundManagement() {
   try {
     const rows = await getRows('持倉')
     positions = rows.map((row) => ({
+      code: row['股票代號'],
       fundSource: row['資金來源'],
       shares: Number(row['股數']),
       costPrice: Number(row['成本價']),
@@ -80,16 +85,18 @@ export default async function FundManagement() {
     console.error('Failed to load positions for fund management:', err.message)
   }
 
-  const grouped = groupByFundSource(positions)
+  const symbols = [...new Set(positions.map((p) => p.code).filter(Boolean))]
+  const prices = symbols.length > 0 ? await getPrices(symbols) : {}
 
-  const fundPools = Object.entries(POOL_CONFIG).map(([name, cfg]) => ({
-    ...cfg,
-    name,
-    cost: Math.round(grouped[name]?.cost ?? 0),
-    totalAsset: Math.round(grouped[name]?.cost ?? 0),
-    profit: 0,
-    profitRate: 0,
-  }))
+  const grouped = groupByFundSource(positions, prices)
+
+  const fundPools = Object.entries(POOL_CONFIG).map(([name, cfg]) => {
+    const cost = Math.round(grouped[name]?.cost ?? 0)
+    const totalAsset = Math.round(grouped[name]?.totalAsset ?? cost)
+    const profit = totalAsset - cost
+    const profitRate = cost > 0 ? +(profit / cost * 100).toFixed(2) : null
+    return { ...cfg, name, cost, totalAsset, profit, profitRate }
+  })
 
   const totalCost = fundPools.reduce((s, p) => s + p.cost, 0)
 
@@ -116,7 +123,7 @@ export default async function FundManagement() {
           <h2 className="text-xl font-semibold">總投入成本</h2>
         </div>
         <p className="text-5xl font-bold mb-2">NT$ {totalCost.toLocaleString()}</p>
-        <p className="text-slate-300 text-sm">現值損益待 FinMind 串接後計算</p>
+        <p className="text-slate-300 text-sm">各資金池損益詳見下方卡片</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -133,6 +140,24 @@ export default async function FundManagement() {
                 <div>
                   <p className="text-sm text-gray-500 mb-1">投入成本</p>
                   <p className="text-2xl font-bold text-gray-900">NT$ {pool.cost.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">目前價值</p>
+                  <p className="text-xl font-semibold text-gray-900">NT$ {pool.totalAsset.toLocaleString()}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">損益</p>
+                    <p className={`text-lg font-semibold ${pool.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {pool.profit >= 0 ? '+' : ''}NT$ {pool.profit.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">報酬率</p>
+                    <p className={`text-lg font-semibold ${pool.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {pool.profitRate != null ? `${pool.profit >= 0 ? '+' : ''}${pool.profitRate}%` : '—'}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

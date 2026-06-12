@@ -1,56 +1,109 @@
+import { getRows } from '@/lib/sheets'
+import { getPrices } from '@/lib/prices'
 import StatCard from '@/components/dashboard/stat-card'
 import DonutChart from '@/components/dashboard/donut-chart'
 import TradesTable from '@/components/dashboard/trades-table'
 
-const mockStats = {
-  netAssets: 1282000,
-  todayPnl: 15800,
-  todayPct: 1.25,
+export const dynamic = 'force-dynamic'
+
+const FUND_COLORS = {
+  '定期定額': '#3b82f6',
+  '貸款資金': '#8b5cf6',
+  '閒錢操作': '#10b981',
 }
 
-const mockPositions = [
-  { name: '台積電', code: '2330', value: 450000, color: '#4f46e5' },
-  { name: '聯發科', code: '2454', value: 320000, color: '#7c3aed' },
-  { name: '鴻海',   code: '2317', value: 256000, color: '#ec4899' },
-  { name: '其他',   code: '',     value: 256000, color: '#f59e0b' },
-]
+export function computeDashboardStats(positions) {
+  const netAssets = positions.reduce((s, p) => {
+    return s + (p.currentPrice != null ? p.currentPrice * p.shares : p.costPrice * p.shares)
+  }, 0)
 
-const mockTrades = [
-  { date: '2026-06-05', type: '買入', name: '台積電', code: '2330', amount: 5800 },
-  { date: '2026-06-03', type: '賣出', name: '聯發科', code: '2454', amount: 5600 },
-  { date: '2026-06-01', type: '買入', name: '鴻海',   code: '2317', amount: 2100 },
-]
+  const priced = positions.filter((p) => p.currentPrice != null && p.change != null)
+  if (priced.length === 0) return { netAssets, todayPnl: null, todayPct: null }
 
-export default function DashboardPage() {
-  const pnlSign = mockStats.todayPnl >= 0 ? '+' : '-'
+  const todayPnl = priced.reduce((s, p) => s + p.change * p.shares, 0)
+  const prevValue = priced.reduce((s, p) => s + (p.currentPrice - p.change) * p.shares, 0)
+  const todayPct = prevValue > 0 ? (todayPnl / prevValue) * 100 : null
+
+  return { netAssets, todayPnl, todayPct }
+}
+
+export function toDonutPositions(positions) {
+  return positions
+    .map((p) => ({
+      name: p.name,
+      code: p.code,
+      value: p.currentPrice != null ? p.currentPrice * p.shares : p.costPrice * p.shares,
+      color: FUND_COLORS[p.fundSource] ?? '#94a3b8',
+    }))
+    .filter((p) => p.value > 0)
+}
+
+export default async function DashboardPage() {
+  let positions = []
+  let recentTrades = []
+
+  try {
+    const [posRows, tradeRows] = await Promise.all([
+      getRows('持倉'),
+      getRows('交易記錄'),
+    ])
+
+    const rawPositions = posRows.map((row) => ({
+      code: row['股票代號'],
+      name: row['股票名稱'],
+      shares: Number(row['股數']),
+      costPrice: Number(row['成本價']),
+      fundSource: row['資金來源'],
+    }))
+
+    const symbols = [...new Set(rawPositions.map((p) => p.code))]
+    const prices = symbols.length > 0 ? await getPrices(symbols) : {}
+
+    positions = rawPositions.map((p) => ({
+      ...p,
+      currentPrice: prices[p.code]?.price ?? null,
+      change: prices[p.code]?.change ?? null,
+    }))
+
+    recentTrades = tradeRows.slice(-5).reverse().map((row) => ({
+      date: row['日期'],
+      type: row['類型'],
+      name: row['股票名稱'],
+      code: row['股票代號'],
+      amount: Number(row['金額']),
+    }))
+  } catch (err) {
+    console.error('Dashboard data failed:', err.message)
+  }
+
+  const { netAssets, todayPnl, todayPct } = computeDashboardStats(positions)
+  const donutPositions = toDonutPositions(positions)
 
   return (
     <main className="p-8 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-extrabold text-gray-900 mb-1">Dashboard 總覽</h1>
       <p className="text-sm text-gray-500 mb-7">資產追蹤與最新動態</p>
 
-      {/* Top stat cards */}
       <div className="grid grid-cols-2 gap-5 mb-5">
         <StatCard
           label="資產淨值"
-          value={`NT$ ${mockStats.netAssets.toLocaleString()}`}
+          value={`NT$ ${Math.round(netAssets).toLocaleString()}`}
         />
         <StatCard
           label="今日損益"
-          value={`NT$ ${pnlSign}${Math.abs(mockStats.todayPnl).toLocaleString()}`}
-          change={mockStats.todayPct}
+          value={todayPnl != null ? `NT$ ${Math.round(todayPnl).toLocaleString()}` : '—'}
+          change={todayPct}
         />
       </div>
 
-      {/* Bottom cards */}
       <div className="grid grid-cols-2 gap-5">
         <div className="bg-white rounded-2xl p-6 shadow-sm">
           <h2 className="text-base font-bold text-gray-900 mb-4">持倉概況</h2>
-          <DonutChart positions={mockPositions} />
+          <DonutChart positions={donutPositions} />
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-sm">
-          <TradesTable trades={mockTrades} />
+          <TradesTable trades={recentTrades} />
         </div>
       </div>
     </main>

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 export default function SyncDividendsButton() {
-  const [state, setState] = useState('idle') // idle | loading | done
+  const [state, setState] = useState('idle') // idle | loading | done | error
   const [added, setAdded] = useState(0)
   const router = useRouter()
 
@@ -18,7 +18,7 @@ export default function SyncDividendsButton() {
       setState('done')
       router.refresh()
     } catch {
-      setState('idle')
+      setState('error')
     }
   }
 
@@ -38,6 +38,7 @@ export default function SyncDividendsButton() {
       </svg>
       {state === 'loading' && '同步中...'}
       {state === 'done' && (added > 0 ? `已新增 ${added} 筆` : '已是最新')}
+      {state === 'error' && '同步失敗，請重試'}
       {state === 'idle' && '同步股利'}
     </button>
   )

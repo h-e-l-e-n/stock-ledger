@@ -1,4 +1,5 @@
 import { getRows } from '@/lib/sheets'
+import SyncDividendsButton from '@/components/sync-dividends-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -99,9 +100,12 @@ export default async function DividendsPage() {
 
   return (
     <main className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">股利記錄</h1>
-        <p className="text-gray-500 mt-2">歷年配息與殖利率統計</p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">股利記錄</h1>
+          <p className="text-gray-500 mt-2">歷年配息與殖利率統計</p>
+        </div>
+        <SyncDividendsButton />
       </div>
 
       <div className="bg-linear-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg p-8 mb-8 text-white">

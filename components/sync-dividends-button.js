@@ -12,6 +12,7 @@ export default function SyncDividendsButton() {
     setState('loading')
     try {
       const res = await fetch('/api/dividends/sync', { method: 'POST' })
+      if (!res.ok) throw new Error(res.statusText)
       const json = await res.json()
       setAdded(json.added ?? 0)
       setState('done')

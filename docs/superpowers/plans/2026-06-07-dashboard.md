@@ -310,7 +310,7 @@ export default function DonutChart({ positions }) {
       <div className="flex flex-wrap justify-center gap-3 mt-3">
         {segments.map((seg) => (
           <div key={seg.name} className="flex items-center gap-1.5 text-xs text-gray-600">
-            <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: seg.color }} />
+            <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: seg.color }} />
             {seg.name} {seg.pct.toFixed(0)}%
           </div>
         ))}

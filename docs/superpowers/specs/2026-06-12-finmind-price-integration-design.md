@@ -27,7 +27,7 @@ getPrices(symbols: string[]) → Promise<{ [symbol]: { price, change, changePerc
 **Cache strategy:**
 
 In-memory module-level cache with two windows per Taiwan calendar day:
-- **盤前 window** (`${date}-open`): 00:00–13:29 Taiwan time
+- **盤中 window** (`${date}-open`): 09:00–13:29 Taiwan time
 - **盤後 window** (`${date}-close`): 13:30–23:59 Taiwan time
 
 Cache key = `${taiwanDate}-${isPastClose ? 'close' : 'open'}`. When the key changes (day rollover or crossing 13:30), the cache is automatically stale and a fresh fetch is made. This means at most two FinMind fetches per day.

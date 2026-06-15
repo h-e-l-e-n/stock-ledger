@@ -1,9 +1,10 @@
+import { NextResponse } from 'next/server'
 import { getRows, appendRow } from '@/lib/sheets'
 import { fetchDividends, computeReceivedDividends } from '@/lib/dividends'
 
 export async function POST() {
   if (!process.env.FINMIND_TOKEN) {
-    return Response.json({ error: 'FINMIND_TOKEN is not set' }, { status: 500 })
+    return NextResponse.json({ error: 'FINMIND_TOKEN is not set' }, { status: 500 })
   }
 
   try {
@@ -19,7 +20,7 @@ export async function POST() {
       fee: Number(row['手續費']),
     }))
 
-    const symbols = [...new Set(trades.map((t) => t.symbol))]
+    const symbols = [...new Set(trades.filter((t) => t.symbol).map((t) => t.symbol))]
     const dividendRecords = await fetchDividends(symbols)
     const computed = computeReceivedDividends(dividendRecords, trades)
 
@@ -36,8 +37,8 @@ export async function POST() {
       await appendRow('股利記錄', [r.date, r.symbol, r.name, r.amount, r.yieldRate])
     }
 
-    return Response.json({ added: newRecords.length })
+    return NextResponse.json({ added: newRecords.length })
   } catch (err) {
-    return Response.json({ error: err.message }, { status: 500 })
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }

@@ -51,7 +51,7 @@ export default async function DashboardPage() {
       fundSource: row['資金來源'],
       symbol: row['股票代號'],
       name: row['股票名稱'],
-      shares: Number(row['股數']),
+      shares: Number(row['股數']) * 1000,
       amount: Number(row['金額']),
       fee: Number(row['手續費']),
     }))

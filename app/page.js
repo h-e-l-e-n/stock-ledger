@@ -1,5 +1,6 @@
 import { getRows } from '@/lib/sheets'
 import { getPrices } from '@/lib/prices'
+import { aggregateTrades } from '@/lib/positions'
 import StatCard from '@/components/dashboard/stat-card'
 import DonutChart from '@/components/dashboard/donut-chart'
 import TradesTable from '@/components/dashboard/trades-table'
@@ -43,18 +44,18 @@ export default async function DashboardPage() {
   let recentTrades = []
 
   try {
-    const [posRows, tradeRows] = await Promise.all([
-      getRows('持倉'),
-      getRows('交易記錄'),
-    ])
-
-    const rawPositions = posRows.map((row) => ({
-      code: row['股票代號'],
+    const tradeRows = await getRows('交易記錄')
+    const trades = tradeRows.map((row) => ({
+      date: row['日期'],
+      type: row['類型'],
+      fundSource: row['資金來源'],
+      symbol: row['股票代號'],
       name: row['股票名稱'],
       shares: Number(row['股數']),
-      costPrice: Number(row['成本價']),
-      fundSource: row['資金來源'],
+      amount: Number(row['金額']),
+      fee: Number(row['手續費']),
     }))
+    const rawPositions = aggregateTrades(trades)
 
     const symbols = [...new Set(rawPositions.map((p) => p.code))]
     const prices = symbols.length > 0 ? await getPrices(symbols) : {}

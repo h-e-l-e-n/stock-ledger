@@ -90,11 +90,11 @@ function formatReturn(val) {
 }
 
 function formatPnl(val) {
-  if (val == null) return { text: 'NT$ 0', color: 'text-gray-900' }
-  const sign = val >= 0 ? '+' : ''
+  if (!val) return { text: 'NT$ 0', color: 'text-gray-400' }
+  const sign = val > 0 ? '+' : '-'
   return {
     text: `${sign}NT$ ${Math.abs(val).toLocaleString()}`,
-    color: val >= 0 ? 'text-green-600' : 'text-red-600',
+    color: val > 0 ? 'text-green-600' : 'text-red-600',
   }
 }
 
@@ -157,7 +157,7 @@ export default function PerformanceClient({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {metrics.map((m) => (
-          <div key={m.label} className={`bg-white rounded-xl shadow-sm p-6 border ${m.borderColor}`}>
+          <div key={m.label} className={`${m.bgColor} rounded-xl shadow-sm p-6 border ${m.borderColor}`}>
             <h3 className="text-sm font-medium text-gray-600 mb-4">{m.label}</h3>
             <p className={`text-4xl font-bold ${m.color}`}>{m.text}</p>
           </div>

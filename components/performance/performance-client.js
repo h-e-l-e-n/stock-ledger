@@ -108,6 +108,7 @@ export default function PerformanceClient({
   annualizedReturn,
   realizedPnl,
   winRate,
+  hasError = false,
 }) {
   const [range, setRange] = useState('月')
   const filtered = filterSeries(costSeries, range)
@@ -139,6 +140,11 @@ export default function PerformanceClient({
 
   return (
     <>
+      {hasError && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          資料載入失敗，顯示最後可用的數據。
+        </div>
+      )}
       <div className="flex gap-2 mb-6">
         {['月', '季', '年'].map((r) => (
           <button

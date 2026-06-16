@@ -16,6 +16,7 @@ export default async function PerformancePage() {
   let annualizedReturn = null
   let realizedPnl = 0
   let winRate = { wins: 0, total: 0, rate: null }
+  let hasError = false
 
   try {
     const rows = await getRows('交易記錄')
@@ -26,7 +27,7 @@ export default async function PerformancePage() {
       symbol: row['股票代號'],
       name: row['股票名稱'],
       shares: Number(row['股數']) * 1000,
-      price: Number(row['價格']),
+      price: Number(row['價格']) || null,
       amount: Number(row['金額']),
       fee: Number(row['手續費']),
     }))
@@ -41,6 +42,7 @@ export default async function PerformancePage() {
     annualizedReturn = computeAnnualizedReturn(trades, rawPositions, prices)
   } catch (err) {
     console.error('Failed to load performance data:', err)
+    hasError = true
   }
 
   return (
@@ -54,6 +56,7 @@ export default async function PerformancePage() {
         annualizedReturn={annualizedReturn}
         realizedPnl={realizedPnl}
         winRate={winRate}
+        hasError={hasError}
       />
     </main>
   )

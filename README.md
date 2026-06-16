@@ -26,7 +26,7 @@
 
 ### 1. 環境需求
 
-- Node.js 18+
+- Node.js 20.6+
 - Google Cloud 服務帳號（需有 Google Sheets API 存取權限）
 - FinMind API Token（[免費申請](https://finmindtrade.com)）
 

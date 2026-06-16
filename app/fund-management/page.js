@@ -39,14 +39,34 @@ const LEGEND_ITEMS = [
 
 const POOL_COLORS = { '定期定額': '#3b82f6', '貸款資金': '#8b5cf6', '閒錢操作': '#10b981' }
 
-const performanceComparison = [
-  { month: '1月', 定期定額: 5.2,  貸款資金: 8.1,  閒錢操作:  2.3  },
-  { month: '2月', 定期定額: 6.1,  貸款資金: 9.5,  閒錢操作: -1.2  },
-  { month: '3月', 定期定額: 6.8,  貸款資金: 10.2, 閒錢操作:  0.8  },
-  { month: '4月', 定期定額: 7.5,  貸款資金: 9.8,  閒錢操作:  1.5  },
-  { month: '5月', 定期定額: 8.0,  貸款資金: 10.5, 閒錢操作:  1.2  },
-  { month: '6月', 定期定額: 8.33, 貸款資金: 10.0, 閒錢操作:  1.89 },
-]
+export function computeMonthlyInvestment(tradeRows) {
+  const map = {}
+  for (const row of tradeRows) {
+    if (row['類型'] !== '買入') continue
+    const date = row['日期']
+    if (!date) continue
+    const parts = date.replace(/-/g, '/').split('/')
+    if (parts.length < 2) continue
+    const sortKey = `${parts[0]}/${parts[1].padStart(2, '0')}`
+    const label = `${parseInt(parts[1])}月`
+    const fund = row['資金來源']
+    const amount = Number(row['金額'])
+    if (!map[sortKey]) map[sortKey] = { month: label, 定期定額: 0, 貸款資金: 0, 閒錢操作: 0 }
+    if (fund && fund in map[sortKey]) map[sortKey][fund] += amount
+  }
+  return Object.keys(map).sort().map((k) => map[k])
+}
+
+function buildYAxis(data) {
+  const POOLS = ['定期定額', '貸款資金', '閒錢操作']
+  const maxVal = Math.max(...data.flatMap((d) => POOLS.map((k) => d[k] ?? 0)), 1)
+  const magnitude = Math.pow(10, Math.floor(Math.log10(maxVal)))
+  const yMax = Math.ceil(maxVal / magnitude) * magnitude
+  const step = yMax / 4
+  const yLabels = [0, step, step * 2, step * 3, yMax]
+  const formatY = (v) => v >= 10000 ? `${Math.round(v / 10000)}萬` : `${v}`
+  return { yMin: 0, yMax, yLabels, formatY }
+}
 
 function PoolIcon({ id, className }) {
   const shared = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2', className, 'aria-hidden': 'true' }
@@ -74,8 +94,10 @@ function PoolIcon({ id, className }) {
 
 export default async function FundManagement() {
   let positions = []
+  let monthlyData = []
   try {
     const rows = await getRows('交易記錄')
+    monthlyData = computeMonthlyInvestment(rows)
     const trades = rows.map((row) => ({
       date: row['日期'],
       type: row['類型'],
@@ -105,6 +127,7 @@ export default async function FundManagement() {
   })
 
   const totalCost = fundPools.reduce((s, p) => s + p.cost, 0)
+  const yAxis = buildYAxis(monthlyData)
 
   const allocationData = fundPools.map((p) => ({
     name: p.name,
@@ -173,7 +196,7 @@ export default async function FundManagement() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">報酬率趨勢對比</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">每月買入金額</h3>
           <div className="flex gap-4 mb-4">
             {LEGEND_ITEMS.map((item) => (
               <div key={item.label} className="flex items-center gap-1.5 text-xs text-gray-600">
@@ -182,7 +205,10 @@ export default async function FundManagement() {
               </div>
             ))}
           </div>
-          <BarChart data={performanceComparison} />
+          {monthlyData.length > 0
+            ? <BarChart data={monthlyData} {...yAxis} />
+            : <p className="text-sm text-gray-400 text-center py-8">尚無交易記錄</p>
+          }
         </div>
 
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">

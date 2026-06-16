@@ -5,7 +5,10 @@ const CX = 50, CY = 50, R = 45, INNER_R = 28
 
 export function polarToCartesian(cx, cy, r, angleDeg) {
   const rad = ((angleDeg - 90) * Math.PI) / 180
-  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
+  return {
+    x: parseFloat((cx + r * Math.cos(rad)).toFixed(4)),
+    y: parseFloat((cy + r * Math.sin(rad)).toFixed(4)),
+  }
 }
 
 export function buildSegments(positions) {
@@ -44,8 +47,8 @@ export default function DonutChart({ positions }) {
               key={key}
               d={seg.d}
               fill={seg.color}
-              style={{ opacity: hoveredKey && hoveredKey !== (seg.code || seg.name) ? 0.35 : 1, transition: 'opacity 0.15s' }}
-              className="cursor-pointer"
+              style={{ opacity: hoveredKey && hoveredKey !== (seg.code || seg.name) ? 0.35 : 1 }}
+              className="cursor-pointer transition-opacity duration-150"
               onMouseEnter={() => setHoveredKey(seg.code || seg.name)}
               onMouseLeave={() => setHoveredKey(null)}
             />

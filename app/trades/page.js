@@ -157,7 +157,7 @@ export default function TradesPage() {
                     <span className="text-gray-400">{sortOrder === 'desc' ? '↓' : '↑'}</span>
                   </button>
                 </th>
-                {['類型', '資金來源', '股票代號', '股票名稱'].map((h) => (
+                {['類型', '資金來源', '股票'].map((h) => (
                   <th key={h} className="text-left py-4 px-6 text-sm font-semibold text-gray-700">{h}</th>
                 ))}
                 {['張數', '價格', '金額', '手續費'].map((h) => (
@@ -180,8 +180,10 @@ export default function TradesPage() {
                       {trade.fundSource}
                     </span>
                   </td>
-                  <td className="py-4 px-6 font-mono font-semibold text-gray-900">{trade.symbol}</td>
-                  <td className="py-4 px-6 font-medium text-gray-700">{trade.name}</td>
+                  <td className="py-4 px-6">
+                    <span className="font-mono font-semibold text-gray-900">{trade.symbol}</span>
+                    <span className="ml-2 text-gray-500 text-sm">{trade.name}</span>
+                  </td>
                   <td className="py-4 px-6 text-right text-gray-700">{trade.shares.toLocaleString('en-US')}</td>
                   <td className="py-4 px-6 text-right text-gray-700">NT$ {trade.price.toLocaleString('en-US')}</td>
                   <td className="py-4 px-6 text-right font-semibold text-gray-900">NT$ {trade.amount.toLocaleString('en-US')}</td>

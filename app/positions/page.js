@@ -52,6 +52,7 @@ export default async function PositionsPage() {
         <StatCard
           label="總損益"
           value={totalPnl != null ? `NT$ ${Math.round(totalPnl).toLocaleString()}` : '—'}
+          sentiment={totalPnl}
         />
         <StatCard label="持股檔數" value={`${positions.length}`} />
       </div>

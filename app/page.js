@@ -66,7 +66,10 @@ export default async function DashboardPage() {
       change: prices[p.code]?.change ?? null,
     }))
 
-    recentTrades = tradeRows.slice(-5).reverse().map((row) => ({
+    recentTrades = [...tradeRows]
+      .sort((a, b) => new Date(b['日期']) - new Date(a['日期']))
+      .slice(0, 5)
+      .map((row) => ({
       date: row['日期'],
       type: row['類型'],
       name: row['股票名稱'],

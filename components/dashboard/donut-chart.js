@@ -1,3 +1,6 @@
+'use client'
+import { useState } from 'react'
+
 const CX = 50, CY = 50, R = 45, INNER_R = 28
 
 export function polarToCartesian(cx, cy, r, angleDeg) {
@@ -13,7 +16,6 @@ export function buildSegments(positions) {
     const sweep = (pct / 100) * 360
     let d
     if (sweep >= 360) {
-      // Full circle — SVG arc with identical start/end is a no-op, use two semicircles
       d = `M ${CX} ${CY - R} A ${R} ${R} 0 1 1 ${CX} ${CY + R} A ${R} ${R} 0 1 1 ${CX} ${CY - R} Z`
     } else {
       const endAngle = startAngle + sweep
@@ -28,15 +30,42 @@ export function buildSegments(positions) {
 }
 
 export default function DonutChart({ positions }) {
+  const [hoveredKey, setHoveredKey] = useState(null)
   const segments = buildSegments(positions)
+  const hovered = segments.find((s) => (s.code || s.name) === hoveredKey) ?? null
 
   return (
     <div className="flex flex-col items-center">
       <svg width="200" height="200" viewBox="0 0 100 100" aria-hidden="true">
-        {segments.map((seg, i) => (
-          <path key={seg.code || `${seg.name}-${i}`} d={seg.d} fill={seg.color} />
-        ))}
+        {segments.map((seg, i) => {
+          const key = seg.code || `${seg.name}-${i}`
+          return (
+            <path
+              key={key}
+              d={seg.d}
+              fill={seg.color}
+              style={{ opacity: hoveredKey && hoveredKey !== (seg.code || seg.name) ? 0.35 : 1, transition: 'opacity 0.15s' }}
+              className="cursor-pointer"
+              onMouseEnter={() => setHoveredKey(seg.code || seg.name)}
+              onMouseLeave={() => setHoveredKey(null)}
+            />
+          )
+        })}
         <circle cx={CX} cy={CY} r={INNER_R} fill="white" />
+
+        {hovered ? (
+          <>
+            <text x={CX} y={CY - 7} textAnchor="middle" fontSize="5" fontWeight="bold" fill="#111827">
+              {hovered.name}
+            </text>
+            <text x={CX} y={CY + 1} textAnchor="middle" fontSize="4" fill="#374151">
+              {`NT$ ${Math.round(hovered.value).toLocaleString()}`}
+            </text>
+            <text x={CX} y={CY + 9} textAnchor="middle" fontSize="4" fill="#6b7280">
+              {hovered.pct.toFixed(1)}%
+            </text>
+          </>
+        ) : null}
       </svg>
 
       {/* Legend */}

@@ -1,6 +1,7 @@
-export default function StatCard({ label, value, change }) {
-  const isPositive = change > 0
-  const isNegative = change < 0
+export default function StatCard({ label, value, change, sentiment }) {
+  const colorSource = change ?? sentiment
+  const isPositive = colorSource > 0
+  const isNegative = colorSource < 0
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm">

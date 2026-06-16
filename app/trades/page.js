@@ -1,7 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
+import { aggregateTrades } from '@/lib/positions'
+
+function computeSellPnls(trades) {
+  const pnls = new Map()
+  for (const sell of trades.filter((t) => t.type === '賣出')) {
+    const prior = trades.filter((t) => t !== sell && t.date <= sell.date)
+    const positions = aggregateTrades(prior)
+    const pos = positions.find((p) => p.code === sell.symbol && p.fundSource === sell.fundSource)
+    if (!pos) continue
+    pnls.set(sell.id, Math.round((sell.amount - sell.fee) - pos.costPrice * sell.shares))
+  }
+  return pnls
+}
 
 const FUND_SOURCE_COLOR = {
   '定期定額': 'bg-blue-100 text-blue-700',
@@ -15,6 +28,9 @@ export default function TradesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState('全部')
   const [filterFund, setFilterFund] = useState('全部')
+  const [sortOrder, setSortOrder] = useState('desc')
+
+  const sellPnls = useMemo(() => computeSellPnls(trades), [trades])
 
   useEffect(() => {
     fetch('/api/trades')
@@ -27,15 +43,20 @@ export default function TradesPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  const filteredTrades = trades.filter((trade) => {
-    const matchesSearch = searchTerm === '' || trade.symbol.includes(searchTerm) || trade.name.includes(searchTerm)
-    const matchesType = filterType === '全部' || trade.type === filterType
-    const matchesFund = filterFund === '全部' || trade.fundSource === filterFund
-    return matchesSearch && matchesType && matchesFund
-  })
+  const filteredTrades = trades
+    .filter((trade) => {
+      const matchesSearch = searchTerm === '' || trade.symbol.includes(searchTerm) || trade.name.includes(searchTerm)
+      const matchesType = filterType === '全部' || trade.type === filterType
+      const matchesFund = filterFund === '全部' || trade.fundSource === filterFund
+      return matchesSearch && matchesType && matchesFund
+    })
+    .sort((a, b) => sortOrder === 'desc'
+      ? b.date.localeCompare(a.date)
+      : a.date.localeCompare(b.date)
+    )
 
   const handleExportCSV = () => {
-    const headers = ['日期', '類型', '資金來源', '股票代號', '股票名稱', '股數', '價格', '金額', '手續費']
+    const headers = ['日期', '類型', '資金來源', '股票代號', '股票名稱', '張數', '價格', '金額', '手續費']
     const rows = filteredTrades.map((t) => [t.date, t.type, t.fundSource, t.symbol, t.name, t.shares, t.price, t.amount, t.fee])
     const csv = [headers, ...rows].map((row) => row.join(',')).join('\n')
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
@@ -127,12 +148,22 @@ export default function TradesPage() {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                {['日期', '類型', '資金來源', '股票代號', '股票名稱'].map((h) => (
+                <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">
+                  <button
+                    onClick={() => setSortOrder((o) => o === 'desc' ? 'asc' : 'desc')}
+                    className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+                  >
+                    日期
+                    <span className="text-gray-400">{sortOrder === 'desc' ? '↓' : '↑'}</span>
+                  </button>
+                </th>
+                {['類型', '資金來源', '股票代號', '股票名稱'].map((h) => (
                   <th key={h} className="text-left py-4 px-6 text-sm font-semibold text-gray-700">{h}</th>
                 ))}
-                {['股數', '價格', '金額', '手續費'].map((h) => (
+                {['張數', '價格', '金額', '手續費'].map((h) => (
                   <th key={h} className="text-right py-4 px-6 text-sm font-semibold text-gray-700">{h}</th>
                 ))}
+                <th className="text-right py-4 px-6 text-sm font-semibold text-gray-700">損益</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -155,6 +186,17 @@ export default function TradesPage() {
                   <td className="py-4 px-6 text-right text-gray-700">NT$ {trade.price.toLocaleString('en-US')}</td>
                   <td className="py-4 px-6 text-right font-semibold text-gray-900">NT$ {trade.amount.toLocaleString('en-US')}</td>
                   <td className="py-4 px-6 text-right text-gray-600">NT$ {trade.fee}</td>
+                  <td className="py-4 px-6 text-right">
+                    {trade.type === '賣出' && sellPnls.has(trade.id) ? (() => {
+                      const pnl = sellPnls.get(trade.id)
+                      const sign = pnl >= 0 ? '+' : ''
+                      return (
+                        <span className={pnl > 0 ? 'text-green-600 font-semibold' : pnl < 0 ? 'text-red-600 font-semibold' : 'text-gray-400'}>
+                          {sign}NT$ {Math.abs(pnl).toLocaleString('en-US')}
+                        </span>
+                      )
+                    })() : <span className="text-gray-300">—</span>}
+                  </td>
                 </tr>
               ))}
             </tbody>

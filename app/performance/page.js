@@ -31,16 +31,16 @@ export default async function PerformancePage() {
       fee: Number(row['手續費']),
     }))
 
-    const rawPositions = aggregateTrades(trades)
-    const symbols = [...new Set(rawPositions.map((p) => p.code))]
-    const prices = symbols.length > 0 ? await getPrices(symbols) : {}
-
     costSeries = buildCostSeries(trades)
     realizedPnl = computeRealizedPnl(trades)
     winRate = computeWinRate(trades)
+
+    const rawPositions = aggregateTrades(trades)
+    const symbols = [...new Set(rawPositions.map((p) => p.code))]
+    const prices = symbols.length > 0 ? await getPrices(symbols) : {}
     annualizedReturn = computeAnnualizedReturn(trades, rawPositions, prices)
   } catch (err) {
-    console.error('Failed to load performance data:', err.message)
+    console.error('Failed to load performance data:', err)
   }
 
   return (

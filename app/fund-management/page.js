@@ -1,6 +1,7 @@
 import { getRows } from '@/lib/sheets'
 import { getPrices } from '@/lib/prices'
 import { aggregateTrades } from '@/lib/positions'
+import { parseTradeRow } from '@/lib/trades'
 import DonutChart from '@/components/dashboard/donut-chart'
 import BarChart from '@/components/fund-management/bar-chart'
 
@@ -98,16 +99,7 @@ export default async function FundManagement() {
   try {
     const rows = await getRows('交易記錄')
     monthlyData = computeMonthlyInvestment(rows)
-    const trades = rows.map((row) => ({
-      date: row['日期'],
-      type: row['類型'],
-      fundSource: row['資金來源'],
-      symbol: row['股票代號'],
-      name: row['股票名稱'],
-      shares: Number(row['股數']) * 1000,
-      amount: Number(row['金額']),
-      fee: Number(row['手續費']),
-    }))
+    const trades = rows.map(parseTradeRow)
     positions = aggregateTrades(trades)
   } catch (err) {
     console.error('Failed to load positions for fund management:', err.message)

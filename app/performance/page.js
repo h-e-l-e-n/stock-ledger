@@ -1,6 +1,7 @@
 import { getRows } from '@/lib/sheets'
 import { aggregateTrades } from '@/lib/positions'
 import { getPrices } from '@/lib/prices'
+import { parseTradeRow } from '@/lib/trades'
 import {
   buildCostSeries,
   computeRealizedPnl,
@@ -20,17 +21,7 @@ export default async function PerformancePage() {
 
   try {
     const rows = await getRows('交易記錄')
-    const trades = rows.map((row) => ({
-      date: row['日期'],
-      type: row['類型'],
-      fundSource: row['資金來源'],
-      symbol: row['股票代號'],
-      name: row['股票名稱'],
-      shares: Number(row['股數']) * 1000,
-      price: Number(row['價格']) || null,
-      amount: Number(row['金額']),
-      fee: Number(row['手續費']),
-    }))
+    const trades = rows.map(parseTradeRow)
 
     costSeries = buildCostSeries(trades)
     realizedPnl = computeRealizedPnl(trades)

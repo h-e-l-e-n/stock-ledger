@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getRows, appendRow } from '@/lib/sheets'
 import { fetchDividends, computeReceivedDividends } from '@/lib/dividends'
+import { parseTradeRow } from '@/lib/trades'
 
 export async function POST() {
   if (!process.env.FINMIND_TOKEN) {
@@ -9,16 +10,7 @@ export async function POST() {
 
   try {
     const tradeRows = await getRows('交易記錄')
-    const trades = tradeRows.map((row) => ({
-      date: row['日期'],
-      type: row['類型'],
-      fundSource: row['資金來源'],
-      symbol: row['股票代號'],
-      name: row['股票名稱'],
-      shares: Number(row['股數']) * 1000,
-      amount: Number(row['金額']),
-      fee: Number(row['手續費']),
-    }))
+    const trades = tradeRows.map(parseTradeRow)
 
     const symbols = [...new Set(trades.filter((t) => t.symbol).map((t) => t.symbol))]
     const dividendRecords = await fetchDividends(symbols)

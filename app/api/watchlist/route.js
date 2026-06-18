@@ -1,6 +1,6 @@
 // app/api/watchlist/route.js
 import { NextResponse } from 'next/server'
-import { getRows, appendRow } from '@/lib/sheets'
+import { getRows, appendRow, deleteRow } from '@/lib/sheets'
 
 export function parseWatchlistItem(row) {
   return {
@@ -34,6 +34,21 @@ export async function POST(request) {
       body.stopLoss,
       'FALSE',
     ])
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
+}
+
+export async function DELETE(request) {
+  const { searchParams } = new URL(request.url)
+  const symbol = searchParams.get('symbol')
+  if (!symbol) return NextResponse.json({ error: 'symbol required' }, { status: 400 })
+  try {
+    const rows = await getRows('觀察清單')
+    const index = rows.findIndex(r => r['股票代號'] === symbol)
+    if (index === -1) return NextResponse.json({ error: 'not found' }, { status: 404 })
+    await deleteRow('觀察清單', index)
     return NextResponse.json({ ok: true })
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 })

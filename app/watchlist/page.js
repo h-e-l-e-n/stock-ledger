@@ -17,6 +17,7 @@ export default function WatchlistPage() {
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newItem, setNewItem] = useState({ symbol: '', name: '', targetPrice: '', stopLoss: '' })
+  const [removingSymbol, setRemovingSymbol] = useState(null)
 
   function loadWatchlist() {
     setLoading(true)
@@ -72,8 +73,10 @@ export default function WatchlistPage() {
   }
 
   const handleRemove = async (symbol) => {
-    await fetch(`/api/watchlist?symbol=${encodeURIComponent(symbol)}`, { method: 'DELETE' })
-    loadWatchlist()
+    setRemovingSymbol(symbol)
+    const res = await fetch(`/api/watchlist?symbol=${encodeURIComponent(symbol)}`, { method: 'DELETE' })
+    if (res.ok) loadWatchlist()
+    setRemovingSymbol(null)
   }
 
   return (
@@ -185,8 +188,9 @@ export default function WatchlistPage() {
                     <td className="py-4 px-6 text-center">
                       <button
                         onClick={() => handleRemove(item.symbol)}
-                        className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                        aria-label="移除"
+                        disabled={removingSymbol !== null}
+                        className="p-1 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        aria-label={`移除 ${item.symbol}`}
                       >
                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                           <polyline points="3 6 5 6 21 6"/>

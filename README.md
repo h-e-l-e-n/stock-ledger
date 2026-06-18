@@ -59,6 +59,8 @@ GOOGLE_SHEETS_ID=your-spreadsheet-id
 FINMIND_TOKEN=your-finmind-token
 ```
 
+> 不知道怎麼取得這些金鑰？參考：[stock-ledger 專案設定指南](<https://hackmd.io/@NUuY8XipRSWhht8eVV_cVw/ByR4GUT-fe>)
+
 ### 5. 啟動開發伺服器
 
 ```bash

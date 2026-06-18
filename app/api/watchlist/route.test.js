@@ -47,4 +47,11 @@ describe('DELETE /api/watchlist', () => {
     expect(getRows).not.toHaveBeenCalled()
     expect(deleteRow).not.toHaveBeenCalled()
   })
+
+  test('returns 500 when getRows throws', async () => {
+    getRows.mockRejectedValue(new Error('sheets down'))
+    const req = new Request('http://localhost/api/watchlist?symbol=0050')
+    const res = await DELETE(req)
+    expect(res.status).toBe(500)
+  })
 })

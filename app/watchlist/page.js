@@ -71,6 +71,11 @@ export default function WatchlistPage() {
     loadWatchlist()
   }
 
+  const handleRemove = async (symbol) => {
+    await fetch(`/api/watchlist?symbol=${encodeURIComponent(symbol)}`, { method: 'DELETE' })
+    loadWatchlist()
+  }
+
   return (
     <main className="p-8">
       <div className="mb-8">
@@ -134,6 +139,7 @@ export default function WatchlistPage() {
                 {['提示'].map((h) => (
                   <th key={h} className="text-center py-4 px-6 text-sm font-semibold text-gray-700">{h}</th>
                 ))}
+                <th className="py-4 px-6"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -176,11 +182,25 @@ export default function WatchlistPage() {
                         <span className="inline-block px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium">接近停損價</span>
                       )}
                     </td>
+                    <td className="py-4 px-6 text-center">
+                      <button
+                        onClick={() => handleRemove(item.symbol)}
+                        className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                        aria-label="移除"
+                      >
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                          <polyline points="3 6 5 6 21 6"/>
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                          <path d="M10 11v6M14 11v6"/>
+                          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                        </svg>
+                      </button>
+                    </td>
                   </tr>
                 )
               })}
               {watchlist.length === 0 && (
-                <tr><td colSpan={7} className="py-8 text-center text-gray-400">尚無觀察清單</td></tr>
+                <tr><td colSpan={8} className="py-8 text-center text-gray-400">尚無觀察清單</td></tr>
               )}
             </tbody>
           </table>

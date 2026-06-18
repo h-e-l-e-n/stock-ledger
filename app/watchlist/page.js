@@ -74,9 +74,12 @@ export default function WatchlistPage() {
 
   const handleRemove = async (symbol) => {
     setRemovingSymbol(symbol)
-    const res = await fetch(`/api/watchlist?symbol=${encodeURIComponent(symbol)}`, { method: 'DELETE' })
-    if (res.ok) loadWatchlist()
-    setRemovingSymbol(null)
+    try {
+      const res = await fetch(`/api/watchlist?symbol=${encodeURIComponent(symbol)}`, { method: 'DELETE' })
+      if (res.ok) loadWatchlist()
+    } finally {
+      setRemovingSymbol(null)
+    }
   }
 
   return (
